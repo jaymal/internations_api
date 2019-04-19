@@ -9,11 +9,21 @@ use App\Models\User_role;
 use App\Models\Group;
 use App\User as User;
 
-use App\Services\User as UserService;
+use App\Services\Admin as AdminService;
 
 class UserTest extends TestCase
 {
    use RefreshDatabase;
+   public function create_admin_user()
+    {
+        $user = factory(\App\User::class)->create(); 
+        $addAdminRole = factory(\App\Models\Role::class)->create(); 
+        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
+            'user_id' =>  $user->id,
+        ]);
+        $roleId = (User::findOrFail($user->id)->user_role()->first()->role_id);
+        return $user;
+    }
 
    	/** @test */
    	public function can_create_new_user_with_no_group()
@@ -28,10 +38,12 @@ class UserTest extends TestCase
     /** @test */
   	public function can_add_user_to_a_group()
    	{
-   		$userService = new UserService;
-   		$user = factory(\App\User::class)->create();
+   		$admin = $this->create_admin_user();
+      $user = factory(\App\User::class)->create();
    		$group = factory(\App\Models\Group::class)->create();
-   		$requestArray = [
+   		$userService = new AdminService($admin->id);
+   		
+      $requestArray = [
    			'group_name' => $group->group_name,
    			'id' => $user->id
    		];

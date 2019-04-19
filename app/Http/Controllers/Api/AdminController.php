@@ -13,31 +13,31 @@ use App\Http\Resources\UserResource;
 use App\Http\Resources\RoleResource;
 use App\Http\Resources\GroupResource;
 
-use App\Services\User as UserService;
+use App\Services\Admin as AdminService;
 use App\Services\Group as GroupService;
 use App\Services\Role as RoleService;
 
 class AdminController extends Controller
 {
-   	public $userService;
+   	public $adminService;
    	public $groupService;
    	public $roleService;
-
-    function __construct(UserService $userService, GroupService $groupService, RoleService $roleService )
+    
+ 
+    function __construct(GroupService $groupService, RoleService $roleService )
     {
-        $this->userService = $userService;
+    
         $this->groupService = $groupService;
         $this->roleService = $roleService;
+        $this->middleware(function ($request, $next) {//laravels
+
+            $this->adminService = new AdminService(request()->user()->id);
+            return $next($request);
+
+        });
         return $this->middleware('auth:api');
     }
     
-    //Check if a user is admin i.e if role_id  is 1.
-    public function checkUserIsAdmin()
-    {     	
-    	$recordExist = User_role::where(["role_id" => 1, "user_id" => request()->user()->id])->firstOrFail();
-    	return $recordExist;
-    }
-
     /**
      * Store a new user.
      *
@@ -46,16 +46,16 @@ class AdminController extends Controller
      */
     public function store(Request $request)
     {
-        $this->checkUserIsAdmin();
 
         $this->validate($request, [
             'name' => 'required|min:3',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
         ]);
-        $user = $this->userService->create($request);
+        $user = $this->adminService->create($request);
         return new UserResource($user);
     }
+
      /**
      * update the specified resource from storage.
      *
@@ -64,14 +64,13 @@ class AdminController extends Controller
      */
     public function assign(Request $request)
     {
-        $this->checkUserIsAdmin();
 
         $this->validate($request, [
             'group_name' => 'required|min:3',
             'id' =>'required|numeric',
         ]);
         $groupId = $this->groupService->getGroupId($request);
-        if( $this->userService->addUserToGroup($request, $groupId)){
+        if( $this->adminService->addUserToGroup($request, $groupId)){
         	return response()->json(['message'=>'Users assigned successfully'],201);
 
         }
@@ -79,11 +78,11 @@ class AdminController extends Controller
 
     }
 
+    //remove user from groups
     public function unAssign($id)
     {
-        $this->checkUserIsAdmin();
 
-        $user = $this->userService->removeUserFromGroup($id);
+        $user = $this->adminService->removeUserFromGroup($id);
         return new UserResource($user);
     }
 
@@ -96,8 +95,7 @@ class AdminController extends Controller
     public function destroy($id)
     {
         
-    	$this->checkUserIsAdmin();
-    	$user = $this->userService->delete($id);
+    	$user = $this->adminService->delete($id);
 
         return response()->json(null,200);
     }
@@ -105,7 +103,6 @@ class AdminController extends Controller
     //Create a new group
     public function groupStore(Request $request)
     {
-    	$this->checkUserIsAdmin();
     	 $this->validate($request, [
             'group_name' => 'required|min:3',
         ]);
@@ -117,8 +114,7 @@ class AdminController extends Controller
     public function groupDestroy($id)
     {
         
-    	$this->checkUserIsAdmin();
-    	$userExists = $this->userService->userExists($id);
+    	$userExists = $this->adminService->userExists($id);
         if($userExists){
         	 return response()->json(['error'=>'Unable to delete.Users are still assigned to the group'],400);
         }
@@ -130,7 +126,7 @@ class AdminController extends Controller
     //Add a new role
     public function roleStore(Request $request)
     {
-    	$this->checkUserIsAdmin();
+
     	 $this->validate($request, [
             'role_name' => 'required|min:3',
         ]);
