@@ -13,8 +13,9 @@ use App\Services\Admin as AdminService;
 
 class UserTest extends TestCase
 {
-   use RefreshDatabase;
-   public function create_admin_user()
+    use RefreshDatabase;
+    
+    public function create_admin_user()
     {
         $user = factory(\App\User::class)->create(); 
         $addAdminRole = factory(\App\Models\Role::class)->create(); 

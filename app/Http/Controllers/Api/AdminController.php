@@ -22,14 +22,14 @@ class AdminController extends Controller
    	public $adminService;
    	public $groupService;
    	public $roleService;
-    
+
  
     function __construct(GroupService $groupService, RoleService $roleService )
     {
     
         $this->groupService = $groupService;
         $this->roleService = $roleService;
-        $this->middleware(function ($request, $next) {//laravels
+        $this->middleware(function ($request, $next) {
 
             $this->adminService = new AdminService(request()->user()->id);
             return $next($request);
