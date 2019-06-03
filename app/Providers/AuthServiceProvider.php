@@ -6,6 +6,9 @@ use Laravel\Passport\Passport;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
+use App\User;
+use App\Policies\AdminPolicy;
+
 class AuthServiceProvider extends ServiceProvider
 {
     /**
@@ -14,7 +17,9 @@ class AuthServiceProvider extends ServiceProvider
      * @var array
      */
     protected $policies = [
-        'App\Model' => 'App\Policies\ModelPolicy',
+        //'App\Model' => 'App\Policies\ModelPolicy',
+        User::class => AdminPolicy::class,
+        
     ];
 
     /**
@@ -22,11 +27,10 @@ class AuthServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(Gate $gate)
     {
         $this->registerPolicies();
         Passport::routes();
 
-        //
     }
 }

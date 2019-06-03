@@ -30,20 +30,14 @@ class AuthenticationController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password)
         ]);
-        /*  $user=new User();
-            $user->email=$request->email;
-            $user->name=$request->name;
-            $user->email=$request->email;
-            $user->password=bcrypt($request->password);
-            $user->save();
-        */
+       
         $http = new Client;
 
         $response = $http->post(url('oauth/token'), [
             'form_params' => [
                 'grant_type' => 'password',
                 'client_id' => '2',
-                'client_secret' => 'A3ows1vtGRWoQ2Arz296N1tgGyllFUGkJahhYWKU',
+                'client_secret' => 'jpnfvu48cXCrAi6JXxWJU6UK4gb51gLG0duPHA6H',
                 'username' => $request->email,
                 'password' => $request->password,
                 'scope' => '',
@@ -83,7 +77,7 @@ class AuthenticationController extends Controller
                 'form_params' => [
                     'grant_type' => 'password',
                     'client_id' => '2',
-                    'client_secret' => 'A3ows1vtGRWoQ2Arz296N1tgGyllFUGkJahhYWKU',
+                    'client_secret' => 'jpnfvu48cXCrAi6JXxWJU6UK4gb51gLG0duPHA6H',
                     'username' => $request->email,
                     'password' => $request->password,
                     'scope' => '',
@@ -96,7 +90,12 @@ class AuthenticationController extends Controller
             return response(['message'=>'password not match','status'=>'error']);
         }
     }
- 
+    
+    /**
+     *  Handles exchanging a refresh token for an access token when the access token has expired
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function refreshToken() 
     {
 

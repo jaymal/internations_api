@@ -13,45 +13,38 @@ class CreateUserTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function create_admin_user()
-    {
-        $user = factory(\App\User::class)->create(); 
-        $addAdminRole = factory(\App\Models\Role::class)->create(); 
-        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
-            'user_id' =>  $user->id,
-        ]);
-        $roleId = (User::findOrFail($user->id)->user_role()->first()->role_id);
-        return $user;
-    }
-
     /** @test */ 
     public function admin_can_create_user()
     {
-       $this->withExceptionHandling();
-        $admin = $this->create_admin_user();
-        //$headers = ['Authorization' => "Bearer $token"];
+      // $this->withExceptionHandling();
+        $admin = factory(\App\User::class)->create(); 
+        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
+            'user_id' =>  $admin->id,
+        ]);
         $userPayload = [
             'email' => "jamal@email.com",
             'password' => "secret",
             'name' => "jay",
         ]; 
-        $response = $this->actingAs($admin, 'api')->json('POST', '/api/user', $userPayload);
+        $response = $this->actingAs($admin, 'api')->json('POST', '/api/users', $userPayload);
         $response->assertStatus(201);
         $response->assertJsonFragment(['name' => 'jay', 'email' => 'jamal@email.com']);
 
     }
+
     /** @test */
     public function non_admin_cannot_create_user()
     {
-       //$this->withExceptionHandling();
+        $this->withExceptionHandling();
         $user = factory(\App\User::class)->create(); 
         $userPayload = [
             'email' => "jamalnon@email.com",
             'password' => "secret",
             'name' => "jay non",
         ]; 
-        $response = $this->actingAs($user, 'api')->json('POST', '/api/user', $userPayload);
-        $response->assertStatus(404);
+        $response = $this->actingAs($user, 'api')->json('POST', '/api/users', $userPayload);
+        //$response->dump();
+        $response->assertStatus(403);
         $response->assertJsonMissing(['name' => 'jay non', 'email' => 'jamalnon@email.com']);
     }
 
@@ -59,7 +52,10 @@ class CreateUserTest extends TestCase
     public function admin_can_delete_user()
     {
        //$this->withExceptionHandling();
-        $admin = $this->create_admin_user();
+        $admin = factory(\App\User::class)->create(); 
+        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
+            'user_id' =>  $admin->id,
+        ]);
         $user = factory(\App\User::class)->create(); 
         $userPayload = [
             'id' => $user->id,
@@ -71,7 +67,7 @@ class CreateUserTest extends TestCase
     /** @test */
     public function non_admin_cannot_delete_user()
     {
-       //$this->withExceptionHandling();
+        $this->withExceptionHandling();
         $user1 = factory(\App\User::class)->create(); 
         $user = factory(\App\User::class)->create(); 
         $userPayload = [
@@ -80,7 +76,7 @@ class CreateUserTest extends TestCase
         $response = $this->actingAs($user1, 'api')->json('DELETE', '/api/user/'.$user->id);
         $userExists = User::find($user->id);
         
-        $response->assertStatus(404);       
+        $response->assertStatus(403);       
         $this->assertEquals($user->id, $userExists->id);
     }
 

@@ -17,5 +17,6 @@ class User_role extends Model
         return $this->belongsTo('App\User');
     }
     
+    
 
 }

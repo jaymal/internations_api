@@ -21,4 +21,9 @@ class Group extends Model
     {
         return $this->belongsTo('App\User');
     }
+
+    public function groupRelation()
+    {
+        return $this->hasMany('App\Models\Group');
+    }
 }

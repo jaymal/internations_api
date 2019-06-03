@@ -6,36 +6,34 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
-use App\User;
-use App\Models\User_role;
 
 use App\Http\Resources\UserResource;
 use App\Http\Resources\RoleResource;
 use App\Http\Resources\GroupResource;
 
-use App\Services\Admin as AdminService;
+use App\Services\User as UserService;
 use App\Services\Group as GroupService;
 use App\Services\Role as RoleService;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Exceptions\UserBelongsToGroupException;
+
+
 class AdminController extends Controller
 {
-   	public $adminService;
+   	public $userService;
    	public $groupService;
    	public $roleService;
 
  
-    function __construct(GroupService $groupService, RoleService $roleService )
+    function __construct( UserService $userService, RoleService $roleService,GroupService $groupService )
     {
     
+        $this->middleware('auth:api')->except('index');
         $this->groupService = $groupService;
         $this->roleService = $roleService;
-        $this->middleware(function ($request, $next) {
+        $this->userService = $userService;
 
-            $this->adminService = new AdminService(request()->user()->id);
-            return $next($request);
-
-        });
-        return $this->middleware('auth:api');
     }
     
     /**
@@ -46,13 +44,13 @@ class AdminController extends Controller
      */
     public function store(Request $request)
     {
-
+        $this->authorize('create', auth()->user());
         $this->validate($request, [
             'name' => 'required|min:3',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
         ]);
-        $user = $this->adminService->create($request);
+        $user = $this->userService->create($request);
         return new UserResource($user);
     }
 
@@ -64,26 +62,40 @@ class AdminController extends Controller
      */
     public function assign(Request $request)
     {
+        $this->authorize('update', auth()->user());
 
         $this->validate($request, [
-            'group_name' => 'required|min:3',
-            'id' =>'required|numeric',
+            'groupId' => 'required|numeric',
+            'userId' =>'required|numeric',
         ]);
-        $groupId = $this->groupService->getGroupId($request);
-        if( $this->adminService->addUserToGroup($request, $groupId)){
-        	return response()->json(['message'=>'Users assigned successfully'],201);
+        try{
+             $this->userService->addUserToGroup($request->userId, $request->groupId);
+            
+        } catch(Exception $exception){
 
+            return response()->json(['error' => $exception->getMessage()], 404);
+
+        }catch(UserBelongsToGroupException $ex){
+
+            return response()->json(['error' => $ex->getMessage()], 403);
         }
-        return response()->json(['error'=>'Unable to assign user to the group'],500);
+
+        return response()->json(['message'=>'User assigned successfully'],201);
+
 
     }
 
     //remove user from groups
-    public function unAssign($id)
+    public function unAssign($userId, $groupId)
     {
 
-        $user = $this->adminService->removeUserFromGroup($id);
-        return new UserResource($user);
+        $this->authorize('update', auth()->user());
+
+        if( $this->userService->removeUserFromGroup($userId, $groupId)){
+            return response()->json(['message'=>'User removed from group successfully'],200);
+        }
+        return response()->json(['error'=>'Unable to remove user from the group'],422);
+
     }
 
     /**
@@ -94,45 +106,67 @@ class AdminController extends Controller
      */
     public function destroy($id)
     {
-        
-    	$user = $this->adminService->delete($id);
-
-        return response()->json(null,200);
+        $this->authorize('delete', auth()->user());
+        try {
+            $this->userService->delete($id);         
+       
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        }
+        return response()->json(['message'=>'User deleted successfully'], 200);
+       
     }
 
     //Create a new group
     public function groupStore(Request $request)
     {
-    	 $this->validate($request, [
+    	$this->authorize('update', auth()->user());
+
+        $this->validate($request, [
             'group_name' => 'required|min:3',
         ]);
         $group = $this->groupService->create($request);
         return new GroupResource($group);
     }
 
-    //Delete group
-    public function groupDestroy($id)
+    /**
+     * Delete group if it has no users.
+     *
+     * @param   group Id $groupId
+     * @return \Illuminate\Http\Response
+     */
+    public function groupDestroy($groupId)
     {
-        
-    	$userExists = $this->adminService->userExists($id);
-        if($userExists){
-        	 return response()->json(['error'=>'Unable to delete.Users are still assigned to the group'],400);
-        }
+        $this->authorize('update', auth()->user());
 
-    	$this->groupService->delete($id);           
-        return response()->json(null,200);
+         try {
+            $userExists = $this->groupService->groupHasUsers($groupId);
+
+            if($userExists){
+                return response()->json(['error'=>'Unable to delete group.Users are still assigned to the group'],403);//403 Forbidden
+            }
+
+             $this->groupService->delete($groupId);           
+       
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        }
+        return response()->json(['message'=>'Group deleted successfully'],200);
+
     }
 
     //Add a new role
     public function roleStore(Request $request)
     {
-
+        $this->authorize('update', auth()->user());
     	 $this->validate($request, [
             'role_name' => 'required|min:3',
         ]);
         $role = $this->roleService->create($request);
         return new RoleResource($role);
     }
+
+
 
 
 

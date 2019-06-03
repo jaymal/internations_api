@@ -13,24 +13,15 @@ class CreateGroupTest extends TestCase
 {
    
     use RefreshDatabase;
-
-    public function create_admin_user()
-    {
-        $user = factory(\App\User::class)->create(); 
-        $addAdminRole = factory(\App\Models\Role::class)->create(); 
-        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
-            'user_id' =>  $user->id,
-        ]);
-        $roleId = (User::findOrFail($user->id)->user_role()->first()->role_id);
-        return $user;
-    }
-
     
    /** @test */
     public function admin_can_delete_groups()
     {
 
-        $admin = $this->create_admin_user();
+        $admin = factory(\App\User::class)->create(); 
+        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
+            'user_id' =>  $admin->id,
+        ]);
         $group = factory(\App\Models\Group::class)->create(); 
 
         $groupExistInitial = Group::find($group->id);
@@ -47,7 +38,10 @@ class CreateGroupTest extends TestCase
     public function admin_can_create_group()
     {
        $this->withExceptionHandling();
-        $admin = $this->create_admin_user();
+        $admin = factory(\App\User::class)->create(); 
+        $assignAdminRole = factory(\App\Models\User_role::class)->states('admin')->create([
+            'user_id' =>  $admin->id,
+        ]);
         $groupPayload = [
             'group_name' => "group1",
         ]; 
@@ -55,6 +49,20 @@ class CreateGroupTest extends TestCase
         $response->assertStatus(201);
         $response->assertJsonFragment(['groupName' => 'group1']);
 
+    }
+
+    /** @test */
+    public function non_admin_cannot_create_group()
+    {
+        $this->withExceptionHandling();
+        $user = factory(\App\User::class)->create(); 
+        $groupPayload = [
+            'group_name' => "group1",
+        ];  
+        $response = $this->actingAs($user, 'api')->json('POST', '/api/group', $groupPayload);
+        //$response->dump();
+        $response->assertStatus(403);
+        $response->assertJsonMissing(['group_name' => "group1"]);
     }
 
 }

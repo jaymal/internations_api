@@ -4,6 +4,8 @@ namespace App\Exceptions;
 
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Exceptions\UserBelongsToGroupException;
 
 class Handler extends ExceptionHandler
 {
@@ -46,6 +48,13 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        if ($exception instanceof ModelNotFoundException) {
+            return response()->json([
+            'error' => 'No query results for Model: '.str_replace('App\\Models\\', '', $exception->getModel()).' found.'], 404);
+        }elseif($exception instanceof UserBelongsToGroupException) {
+            return response()->json([
+            'error' => 'The user already belongs to this group.'], 403);
+        }
         return parent::render($request, $exception);
     }
 }

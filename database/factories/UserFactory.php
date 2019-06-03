@@ -48,4 +48,13 @@ $factory->state(App\Models\User_role::class, 'admin', function (Faker $faker) {
     ];
 });
 
+/*$factory->state(App\Models\User_role::class, 'admin2', function (Faker $faker) {
+    return [
+        'user_id' => function() {
+            return factory(App\Users::class)->create()->id;
+        },
+        'role_id' => 1,
+    ];
+});*/
+
 

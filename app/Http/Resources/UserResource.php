@@ -18,7 +18,7 @@ class UserResource extends JsonResource
             'id'=>$this->id,
             'name'=>$this->name,
             'email'=>$this->email,
-            'groupId'=>$this->group_id,
+            //'groupId'=>$this->group_id,
             'created_at'=>(string)$this->created_at->format('m/d/Y'),           
             
         ];

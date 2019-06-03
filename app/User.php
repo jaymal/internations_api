@@ -29,9 +29,14 @@ class User extends Authenticatable
     ];
 
 
-    public function user_role()
+    public function userRole()
     {
         return $this->hasMany('App\Models\User_role');
+    }
+
+    public function userGroup()
+    {
+        return $this->hasMany('App\Models\User_group');
     }
     
     public function group()
@@ -41,6 +46,9 @@ class User extends Authenticatable
 
     public function IsAdmin()
     {
-        return $this->user_role->role_id == 1 ? 1: 0;
+        if($this->userRole->first()){
+            return $this->userRole->first()->role_id == 1 ? 1: 0;
+        }
+        return false;
     }
 }
