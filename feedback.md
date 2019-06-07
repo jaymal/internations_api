@@ -15,9 +15,15 @@ Uml class diagram
 data modeling
 -Should Domain entities map to models or where
 
-to add
+To add and Try
 ======= 
-- queuing system (Redis or Rabbit MQ)
-- add laravel jobs for email notifcation- send mails to users who have just been added by the admin
+- Queuing system (Redis or Rabbit MQ)
 - try sockets with your next web
+- Swagger
 
+
+Things to check
+-----------------------
+- queue email - redis driver
+- CI/CD
+- cloud computing

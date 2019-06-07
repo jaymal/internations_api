@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
 
+
 use App\Http\Resources\UserResource;
 use App\Http\Resources\RoleResource;
 use App\Http\Resources\GroupResource;
@@ -17,6 +18,10 @@ use App\Services\Role as RoleService;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Exceptions\UserBelongsToGroupException;
+
+use App\Events\UserCreated;
+use App\Events\UserAssignedToGroup;
+
 
 
 class AdminController extends Controller
@@ -51,6 +56,9 @@ class AdminController extends Controller
             'password' => 'required|min:6',
         ]);
         $user = $this->userService->create($request);
+
+        event(new UserCreated($user));
+
         return new UserResource($user);
     }
 
@@ -69,7 +77,8 @@ class AdminController extends Controller
             'userId' =>'required|numeric',
         ]);
         try{
-             $this->userService->addUserToGroup($request->userId, $request->groupId);
+             $userGroup = $this->userService->addUserToGroup($request->userId, $request->groupId);
+             event(new UserAssignedToGroup($userGroup));
             
         } catch(Exception $exception){
 
